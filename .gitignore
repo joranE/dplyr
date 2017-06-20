@@ -10,5 +10,10 @@ inst/doc
 .httr-oauth
 vignettes/*.R
 .DS_Store
-/.idea
 /clion-test.R
+/BROWSE
+/GPATH
+/GRTAGS
+/GTAGS
+/TAGS
+/.dir-locals.el

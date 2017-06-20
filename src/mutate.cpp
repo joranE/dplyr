@@ -1,130 +1,143 @@
+#include "pch.h"
 #include <dplyr/main.h>
 
 #include <boost/scoped_ptr.hpp>
 
-#include <tools/LazyDots.h>
+#include <tools/Quosure.h>
 
-#include <dplyr/check_supported_type.h>
+#include <dplyr/checks.h>
 
 #include <dplyr/GroupedDataFrame.h>
-#include <dplyr/RowwiseDataFrame.h>
-#include <dplyr/tbl_cpp.h>
 
 #include <dplyr/Result/LazyRowwiseSubsets.h>
 #include <dplyr/Result/CallProxy.h>
 
 #include <dplyr/Gatherer.h>
-#include <dplyr/Replicator.h>
 #include <dplyr/NamedListAccumulator.h>
+
+#include <dplyr/bad.h>
 
 using namespace Rcpp;
 using namespace dplyr;
 
 template <typename Data>
-SEXP structure_mutate(const NamedListAccumulator<Data>& accumulator, const DataFrame& df, CharacterVector classes) {
+SEXP structure_mutate(const NamedListAccumulator<Data>& accumulator,
+                      const DataFrame& df,
+                      CharacterVector classes,
+                      bool grouped = true) {
   List res = accumulator;
-  res.attr("class") = classes;
+  set_class(res, classes);
   set_rownames(res, df.nrows());
-  res.attr("vars")   = df.attr("vars");
-  res.attr("labels")  = df.attr("labels");
-  res.attr("index")  = df.attr("index");
-  res.attr("indices") = df.attr("indices");
-  res.attr("drop") = df.attr("drop");
-  res.attr("group_sizes") = df.attr("group_sizes");
-  res.attr("biggest_group_size") = df.attr("biggest_group_size");
+
+  if (grouped) {
+    copy_vars(res, df);
+    res.attr("labels")  = df.attr("labels");
+    res.attr("index")  = df.attr("index");
+    res.attr("indices") = df.attr("indices");
+    res.attr("drop") = df.attr("drop");
+    res.attr("group_sizes") = df.attr("group_sizes");
+    res.attr("biggest_group_size") = df.attr("biggest_group_size");
+  }
 
   return res;
 }
 
-void check_not_groups(const LazyDots& dots, const RowwiseDataFrame& gdf) {}
+void check_not_groups(const QuosureList&, const RowwiseDataFrame&) {}
 
-void check_not_groups(const LazyDots& dots, const GroupedDataFrame& gdf) {
-  int n = dots.size();
-  for (int i=0; i<n; i++) {
-    if (gdf.has_group(dots[i].name()))
-      stop("cannot modify grouping variable");
+void check_not_groups(const QuosureList& quosures, const GroupedDataFrame& gdf) {
+  int n = quosures.size();
+  for (int i = 0; i < n; i++) {
+    if (gdf.has_group(quosures[i].name()))
+      bad_col(quosures[i].name(), "can't be modified because it's a grouping variable");
   }
 }
 
+static
+SEXP validate_unquoted_value(SEXP value, int nrows, SymbolString& name) {
+  if (is_vector(value))
+    check_length(Rf_length(value), nrows, "the number of rows", name);
+  else
+    bad_col(name, "is of unsupported type {type}", _["type"] = Rf_type2char(TYPEOF(value)));
+  return value;
+}
 
-SEXP mutate_not_grouped(DataFrame df, const LazyDots& dots) {
-  int nexpr = dots.size();
-  int nrows = df.nrows();
+DataFrame mutate_not_grouped(DataFrame df, const QuosureList& dots) {
+  const int nexpr = dots.size();
+  const int nrows = df.nrows();
 
   NamedListAccumulator<DataFrame> accumulator;
-  int nvars = df.size();
+  const int nvars = df.size();
   if (nvars) {
     CharacterVector df_names = df.names();
-    for (int i=0; i<nvars; i++) {
-      accumulator.set(Symbol(df_names[i]), df[i]);
+    for (int i = 0; i < nvars; i++) {
+      accumulator.set(df_names[i], df[i]);
     }
   }
 
   CallProxy call_proxy(df);
-  List results(nexpr);
 
-  for (int i=0; i<nexpr; i++) {
+  for (int i = 0; i < nexpr; i++) {
     Rcpp::checkUserInterrupt();
-    const Lazy& lazy = dots[i];
+    const NamedQuosure& quosure = dots[i];
 
-    Shield<SEXP> call_(lazy.expr());
+    Shield<SEXP> call_(quosure.expr());
     SEXP call = call_;
-    Symbol name = lazy.name();
-    Environment env = lazy.env();
+    SymbolString name = quosure.name();
+    Environment env = quosure.env();
     call_proxy.set_env(env);
 
+    RObject variable;
     if (TYPEOF(call) == SYMSXP) {
-      if (call_proxy.has_variable(call)) {
-        results[i] = call_proxy.get_variable(PRINTNAME(call));
+      SymbolString call_name = SymbolString(Symbol(call));
+      if (call_proxy.has_variable(call_name)) {
+        variable = call_proxy.get_variable(call_name);
       } else {
-        results[i] = shared_SEXP(env.find(CHAR(PRINTNAME(call))));
+        variable = shared_SEXP(env.find(call_name.get_string()));
       }
     } else if (TYPEOF(call) == LANGSXP) {
       call_proxy.set_call(call);
-      results[i] = call_proxy.eval();
+      variable = call_proxy.eval();
     } else if (Rf_length(call) == 1) {
-      boost::scoped_ptr<Gatherer> gather(constant_gatherer(call, nrows));
-      results[i] = gather->collect();
+      boost::scoped_ptr<Gatherer> gather(constant_gatherer(call, nrows, name));
+      variable = gather->collect();
     } else if (Rf_isNull(call)) {
       accumulator.rm(name);
       continue;
     } else {
-      stop("cannot handle");
+      variable = validate_unquoted_value(call, nrows, name);
     }
 
-    check_supported_type(results[i], name.c_str());
-
-    if (Rf_inherits(results[i], "POSIXlt")) {
-      stop("`mutate` does not support `POSIXlt` results");
+    if (Rf_inherits(variable, "POSIXlt")) {
+      bad_col(quosure.name(), "is of unsupported class POSIXlt");
     }
-    int n_res = Rf_length(results[i]);
-    if (n_res == nrows) {
-      // ok
-    } else if (n_res == 1) {
+
+    const int n_res = Rf_length(variable);
+    check_supported_type(variable, name);
+    check_length(n_res, nrows, "the number of rows", name);
+
+    if (n_res == 1 && nrows != 1) {
       // recycle
-      boost::scoped_ptr<Gatherer> gather(constant_gatherer(results[i] , df.nrows()));
-      results[i] = gather->collect();
-    } else {
-      stop("wrong result size (%d), expected %d or 1", n_res, nrows);
+      boost::scoped_ptr<Gatherer> gather(constant_gatherer(variable, nrows, name));
+      variable = gather->collect();
     }
 
-    call_proxy.input(name, results[i]);
-    accumulator.set(name, results[i]);
+    call_proxy.input(name, variable);
+    accumulator.set(name, variable);
   }
-  List res = structure_mutate(accumulator, df, classes_not_grouped());
+  List res = structure_mutate(accumulator, df, classes_not_grouped(), false);
 
   return res;
 }
 
 template <typename Data, typename Subsets>
-SEXP mutate_grouped(const DataFrame& df, const LazyDots& dots) {
+DataFrame mutate_grouped(const DataFrame& df, const QuosureList& dots) {
   LOG_VERBOSE << "checking zero rows";
 
   // special 0 rows case
   if (df.nrows() == 0) {
     DataFrame res = mutate_not_grouped(df, dots);
-    res.attr("vars") = df.attr("vars");
-    res.attr("class") = df.attr("class");
+    copy_vars(res, df);
+    set_class(res, get_class(df));
     return Data(res).data();
   }
 
@@ -142,79 +155,51 @@ SEXP mutate_grouped(const DataFrame& df, const LazyDots& dots) {
   NamedListAccumulator<Data> accumulator;
   int ncolumns = df.size();
   CharacterVector column_names = df.names();
-  for (int i=0; i<ncolumns; i++) {
-    accumulator.set(Symbol(column_names[i]), df[i]);
+  for (int i = 0; i < ncolumns; i++) {
+    accumulator.set(column_names[i], df[i]);
   }
 
   LOG_VERBOSE << "processing " << nexpr << " variables";
 
-  List variables(nexpr);
-  for (int i=0; i<nexpr; i++) {
+  for (int i = 0; i < nexpr; i++) {
     Rcpp::checkUserInterrupt();
-    const Lazy& lazy = dots[i];
+    const NamedQuosure& quosure = dots[i];
 
-    Environment env = lazy.env();
-    Shield<SEXP> call_(lazy.expr());
+    Environment env = quosure.env();
+    Shield<SEXP> call_(quosure.expr());
     SEXP call = call_;
-    Symbol name = lazy.name();
+    SymbolString name = quosure.name();
     proxy.set_env(env);
 
-    LOG_VERBOSE << "processing " << CharacterVector(name);
+    LOG_VERBOSE << "processing " << name.get_utf8_cstring();
 
-    if (TYPEOF(call) == SYMSXP) {
-      if (proxy.has_variable(call)) {
-        SEXP variable = variables[i] = proxy.get_variable(PRINTNAME(call));
-        proxy.input(name, variable);
-        accumulator.set(name, variable);
-      } else {
-        SEXP v = env.find(CHAR(PRINTNAME(call)));
-        check_supported_type(v, name.c_str());
-        if (Rf_isNull(v)) {
-          stop("unknown variable: %s", CHAR(PRINTNAME(call)));
-        } else if (Rf_length(v) == 1) {
-          boost::scoped_ptr<Gatherer> rep(constant_gatherer(v, gdf.nrows()));
-          SEXP variable = variables[i] = rep->collect();
-          proxy.input(name, variable);
-          accumulator.set(name, variable);
-        } else {
-          int n = Rf_length(v);
-          bool test = all(gdf.get_group_sizes() == n).is_true();
-          if (!test) {
-            stop("impossible to replicate vector of size %d", n);
-          }
+    RObject variable;
 
-          boost::scoped_ptr<Replicator> rep(replicator<Data>(v, gdf));
-          SEXP variable = variables[i] = rep->collect();
-          proxy.input(name, variable);
-          accumulator.set(name, variable);
-        }
-      }
-
-    } else if (TYPEOF(call) == LANGSXP) {
+    if (TYPEOF(call) == LANGSXP || TYPEOF(call) == SYMSXP) {
       proxy.set_call(call);
       boost::scoped_ptr<Gatherer> gather(gatherer<Data, Subsets>(proxy, gdf, name));
-      SEXP variable = variables[i] = gather->collect();
-      proxy.input(name, variable);
-      accumulator.set(name, variable);
+      variable = gather->collect();
     } else if (Rf_length(call) == 1) {
-      boost::scoped_ptr<Gatherer> gather(constant_gatherer(call, gdf.nrows()));
-      SEXP variable = variables[i] = gather->collect();
-      proxy.input(name, variable);
-      accumulator.set(name, variable);
+      boost::scoped_ptr<Gatherer> gather(constant_gatherer(call, gdf.nrows(), name));
+      variable = gather->collect();
     } else if (Rf_isNull(call)) {
       accumulator.rm(name);
       continue;
     } else {
-      stop("cannot handle");
+      variable = validate_unquoted_value(call, gdf.nrows(), name);
     }
+
+    Rf_setAttrib(variable, R_NamesSymbol, R_NilValue);
+    proxy.input(name, variable);
+    accumulator.set(name, variable);
   }
 
-  return structure_mutate(accumulator, df, df.attr("class"));
+  return structure_mutate(accumulator, df, get_class(df));
 }
 
 
 // [[Rcpp::export]]
-SEXP mutate_impl(DataFrame df, LazyDots dots) {
+SEXP mutate_impl(DataFrame df, QuosureList dots) {
   if (dots.size() == 0) return df;
   check_valid_colnames(df);
   if (is<RowwiseDataFrame>(df)) {

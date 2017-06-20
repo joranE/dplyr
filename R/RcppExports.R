@@ -2,23 +2,23 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 loc <- function(data) {
-    .Call('dplyr_loc', PACKAGE = 'dplyr', data)
+    .Call(dplyr_loc, data)
 }
 
 dfloc <- function(df) {
-    .Call('dplyr_dfloc', PACKAGE = 'dplyr', df)
+    .Call(dplyr_dfloc, df)
 }
 
 plfloc <- function(data) {
-    .Call('dplyr_plfloc', PACKAGE = 'dplyr', data)
+    .Call(dplyr_plfloc, data)
 }
 
 strings_addresses <- function(s) {
-    .Call('dplyr_strings_addresses', PACKAGE = 'dplyr', s)
+    .Call(dplyr_strings_addresses, s)
 }
 
 gp <- function(x) {
-    .Call('dplyr_gp', PACKAGE = 'dplyr', x)
+    .Call(dplyr_gp, x)
 }
 
 #' Enable internal logging
@@ -31,16 +31,16 @@ gp <- function(x) {
 #'
 #' @keywords internal
 init_logging <- function(log_level) {
-    invisible(.Call('dplyr_init_logging', PACKAGE = 'dplyr', log_level))
+    invisible(.Call(dplyr_init_logging, log_level))
 }
 
-arrange_impl <- function(data, dots) {
-    .Call('dplyr_arrange_impl', PACKAGE = 'dplyr', data, dots)
+arrange_impl <- function(data, quosures) {
+    .Call(dplyr_arrange_impl, data, quosures)
 }
 
 #' Do values in a numeric vector fall in specified range?
 #'
-#' This is a shortcut for \code{x >= left & x <= right}, implemented
+#' This is a shortcut for `x >= left & x <= right`, implemented
 #' efficiently in C++ for local values, and translated to the
 #' appropriate SQL for remote tables.
 #'
@@ -51,167 +51,175 @@ arrange_impl <- function(data, dots) {
 #' x <- rnorm(1e2)
 #' x[between(x, -1, 1)]
 between <- function(x, left, right) {
-    .Call('dplyr_between', PACKAGE = 'dplyr', x, left, right)
+    .Call(dplyr_between, x, left, right)
 }
 
-bind_rows_ <- function(dots, id = NULL) {
-    .Call('dplyr_bind_rows_', PACKAGE = 'dplyr', dots, id)
+flatten_bindable <- function(x) {
+    .Call(dplyr_flatten_bindable, x)
 }
 
-rbind_list__impl <- function(dots) {
-    .Call('dplyr_rbind_list__impl', PACKAGE = 'dplyr', dots)
+bind_rows_ <- function(dots, id) {
+    .Call(dplyr_bind_rows_, dots, id)
 }
 
 cbind_all <- function(dots) {
-    .Call('dplyr_cbind_all', PACKAGE = 'dplyr', dots)
+    .Call(dplyr_cbind_all, dots)
 }
 
 combine_all <- function(data) {
-    .Call('dplyr_combine_all', PACKAGE = 'dplyr', data)
+    .Call(dplyr_combine_all, data)
 }
 
 combine_vars <- function(vars, xs) {
-    .Call('dplyr_combine_vars', PACKAGE = 'dplyr', vars, xs)
+    .Call(dplyr_combine_vars, vars, xs)
 }
 
 distinct_impl <- function(df, vars, keep) {
-    .Call('dplyr_distinct_impl', PACKAGE = 'dplyr', df, vars, keep)
+    .Call(dplyr_distinct_impl, df, vars, keep)
 }
 
 n_distinct_multi <- function(variables, na_rm = FALSE) {
-    .Call('dplyr_n_distinct_multi', PACKAGE = 'dplyr', variables, na_rm)
+    .Call(dplyr_n_distinct_multi, variables, na_rm)
 }
 
-filter_impl <- function(df, dots) {
-    .Call('dplyr_filter_impl', PACKAGE = 'dplyr', df, dots)
-}
-
-grouped_indices_grouped_df_impl <- function(gdf) {
-    .Call('dplyr_grouped_indices_grouped_df_impl', PACKAGE = 'dplyr', gdf)
-}
-
-grouped_indices_impl <- function(data, symbols) {
-    .Call('dplyr_grouped_indices_impl', PACKAGE = 'dplyr', data, symbols)
-}
-
-group_size_grouped_cpp <- function(gdf) {
-    .Call('dplyr_group_size_grouped_cpp', PACKAGE = 'dplyr', gdf)
-}
-
-resolve_vars <- function(new_groups, names) {
-    .Call('dplyr_resolve_vars', PACKAGE = 'dplyr', new_groups, names)
+filter_impl <- function(df, quo) {
+    .Call(dplyr_filter_impl, df, quo)
 }
 
 grouped_df_impl <- function(data, symbols, drop) {
-    .Call('dplyr_grouped_df_impl', PACKAGE = 'dplyr', data, symbols, drop)
+    .Call(dplyr_grouped_df_impl, data, symbols, drop)
 }
 
 as_regular_df <- function(df) {
-    .Call('dplyr_as_regular_df', PACKAGE = 'dplyr', df)
+    .Call(dplyr_as_regular_df, df)
 }
 
 ungroup_grouped_df <- function(df) {
-    .Call('dplyr_ungroup_grouped_df', PACKAGE = 'dplyr', df)
+    .Call(dplyr_ungroup_grouped_df, df)
 }
 
-semi_join_impl <- function(x, y, by_x, by_y) {
-    .Call('dplyr_semi_join_impl', PACKAGE = 'dplyr', x, y, by_x, by_y)
+test_grouped_df <- function(data) {
+    .Call(dplyr_test_grouped_df, data)
 }
 
-anti_join_impl <- function(x, y, by_x, by_y) {
-    .Call('dplyr_anti_join_impl', PACKAGE = 'dplyr', x, y, by_x, by_y)
+grouped_indices_grouped_df_impl <- function(gdf) {
+    .Call(dplyr_grouped_indices_grouped_df_impl, gdf)
 }
 
-inner_join_impl <- function(x, y, by_x, by_y, suffix_x, suffix_y) {
-    .Call('dplyr_inner_join_impl', PACKAGE = 'dplyr', x, y, by_x, by_y, suffix_x, suffix_y)
+group_size_grouped_cpp <- function(gdf) {
+    .Call(dplyr_group_size_grouped_cpp, gdf)
 }
 
-left_join_impl <- function(x, y, by_x, by_y, suffix_x, suffix_y) {
-    .Call('dplyr_left_join_impl', PACKAGE = 'dplyr', x, y, by_x, by_y, suffix_x, suffix_y)
+semi_join_impl <- function(x, y, by_x, by_y, na_match) {
+    .Call(dplyr_semi_join_impl, x, y, by_x, by_y, na_match)
 }
 
-right_join_impl <- function(x, y, by_x, by_y, suffix_x, suffix_y) {
-    .Call('dplyr_right_join_impl', PACKAGE = 'dplyr', x, y, by_x, by_y, suffix_x, suffix_y)
+anti_join_impl <- function(x, y, by_x, by_y, na_match) {
+    .Call(dplyr_anti_join_impl, x, y, by_x, by_y, na_match)
 }
 
-full_join_impl <- function(x, y, by_x, by_y, suffix_x, suffix_y) {
-    .Call('dplyr_full_join_impl', PACKAGE = 'dplyr', x, y, by_x, by_y, suffix_x, suffix_y)
+inner_join_impl <- function(x, y, by_x, by_y, suffix_x, suffix_y, na_match) {
+    .Call(dplyr_inner_join_impl, x, y, by_x, by_y, suffix_x, suffix_y, na_match)
 }
 
-slice_impl <- function(df, dots) {
-    .Call('dplyr_slice_impl', PACKAGE = 'dplyr', df, dots)
+left_join_impl <- function(x, y, by_x, by_y, suffix_x, suffix_y, na_match) {
+    .Call(dplyr_left_join_impl, x, y, by_x, by_y, suffix_x, suffix_y, na_match)
+}
+
+right_join_impl <- function(x, y, by_x, by_y, suffix_x, suffix_y, na_match) {
+    .Call(dplyr_right_join_impl, x, y, by_x, by_y, suffix_x, suffix_y, na_match)
+}
+
+full_join_impl <- function(x, y, by_x, by_y, suffix_x, suffix_y, na_match) {
+    .Call(dplyr_full_join_impl, x, y, by_x, by_y, suffix_x, suffix_y, na_match)
 }
 
 mutate_impl <- function(df, dots) {
-    .Call('dplyr_mutate_impl', PACKAGE = 'dplyr', df, dots)
+    .Call(dplyr_mutate_impl, df, dots)
 }
 
 select_impl <- function(df, vars) {
-    .Call('dplyr_select_impl', PACKAGE = 'dplyr', df, vars)
+    .Call(dplyr_select_impl, df, vars)
 }
 
 compatible_data_frame_nonames <- function(x, y, convert) {
-    .Call('dplyr_compatible_data_frame_nonames', PACKAGE = 'dplyr', x, y, convert)
+    .Call(dplyr_compatible_data_frame_nonames, x, y, convert)
 }
 
 compatible_data_frame <- function(x, y, ignore_col_order = TRUE, convert = FALSE) {
-    .Call('dplyr_compatible_data_frame', PACKAGE = 'dplyr', x, y, ignore_col_order, convert)
+    .Call(dplyr_compatible_data_frame, x, y, ignore_col_order, convert)
 }
 
 equal_data_frame <- function(x, y, ignore_col_order = TRUE, ignore_row_order = TRUE, convert = FALSE) {
-    .Call('dplyr_equal_data_frame', PACKAGE = 'dplyr', x, y, ignore_col_order, ignore_row_order, convert)
+    .Call(dplyr_equal_data_frame, x, y, ignore_col_order, ignore_row_order, convert)
 }
 
 union_data_frame <- function(x, y) {
-    .Call('dplyr_union_data_frame', PACKAGE = 'dplyr', x, y)
+    .Call(dplyr_union_data_frame, x, y)
 }
 
 intersect_data_frame <- function(x, y) {
-    .Call('dplyr_intersect_data_frame', PACKAGE = 'dplyr', x, y)
+    .Call(dplyr_intersect_data_frame, x, y)
 }
 
 setdiff_data_frame <- function(x, y) {
-    .Call('dplyr_setdiff_data_frame', PACKAGE = 'dplyr', x, y)
+    .Call(dplyr_setdiff_data_frame, x, y)
+}
+
+slice_impl <- function(df, dots) {
+    .Call(dplyr_slice_impl, df, dots)
 }
 
 summarise_impl <- function(df, dots) {
-    .Call('dplyr_summarise_impl', PACKAGE = 'dplyr', df, dots)
+    .Call(dplyr_summarise_impl, df, dots)
 }
 
 test_comparisons <- function() {
-    .Call('dplyr_test_comparisons', PACKAGE = 'dplyr')
+    .Call(dplyr_test_comparisons)
+}
+
+test_matches <- function() {
+    .Call(dplyr_test_matches)
+}
+
+test_length_wrap <- function() {
+    .Call(dplyr_test_length_wrap)
 }
 
 assert_all_white_list <- function(data) {
-    invisible(.Call('dplyr_assert_all_white_list', PACKAGE = 'dplyr', data))
+    invisible(.Call(dplyr_assert_all_white_list, data))
 }
 
 shallow_copy <- function(data) {
-    .Call('dplyr_shallow_copy', PACKAGE = 'dplyr', data)
+    .Call(dplyr_shallow_copy, data)
 }
 
 #' Cumulativate versions of any, all, and mean
 #'
-#' dplyr adds \code{cumall}, \code{cumany}, and \code{cummean} to complete
+#' dplyr adds `cumall()`, `cumany()`, and `cummean()` to complete
 #' R's set of cumulate functions to match the aggregation functions available
 #' in most databases
 #'
-#' @param x For \code{cumall} & \code{cumany}, a logical vector; for
-#'   \code{cummean} an integer or numeric vector
+#' @param x For `cumall()` and `cumany()`, a logical vector; for
+#'   `cummean()` an integer or numeric vector
 #' @export
 cumall <- function(x) {
-    .Call('dplyr_cumall', PACKAGE = 'dplyr', x)
+    .Call(dplyr_cumall, x)
 }
 
 #' @export
 #' @rdname cumall
 cumany <- function(x) {
-    .Call('dplyr_cumany', PACKAGE = 'dplyr', x)
+    .Call(dplyr_cumany, x)
 }
 
 #' @export
 #' @rdname cumall
 cummean <- function(x) {
-    .Call('dplyr_cummean', PACKAGE = 'dplyr', x)
+    .Call(dplyr_cummean, x)
 }
 
+# Register entry points for exported C++ functions
+methods::setLoadAction(function(ns) {
+    .Call('dplyr_RcppExport_registerCCallable', PACKAGE = 'dplyr')
+})

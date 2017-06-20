@@ -1,3 +1,4 @@
+#include "pch.h"
 #include <dplyr/main.h>
 
 #include <dplyr/visitor_set/VisitorSetIndexSet.h>
@@ -10,10 +11,10 @@
 using namespace Rcpp;
 using namespace dplyr;
 
-SEXP select_not_grouped(const DataFrame& df, const CharacterVector& keep, CharacterVector new_names);
+SEXP select_not_grouped(const DataFrame& df, const SymbolVector& keep, const SymbolVector& new_names);
 
 // [[Rcpp::export]]
-SEXP distinct_impl(DataFrame df, CharacterVector vars, CharacterVector keep) {
+SEXP distinct_impl(DataFrame df, const SymbolVector& vars, const SymbolVector& keep) {
   if (df.size() == 0)
     return df;
 
@@ -22,28 +23,25 @@ SEXP distinct_impl(DataFrame df, CharacterVector vars, CharacterVector keep) {
     return df;
 
   check_valid_colnames(df);
-  if (!vars.size()) {
-    vars = df.names();
-  }
   DataFrameVisitors visitors(df, vars);
 
   std::vector<int> indices;
   VisitorSetIndexSet<DataFrameVisitors> set(visitors);
 
   int n = df.nrows();
-  for (int i=0; i<n; i++) {
+  for (int i = 0; i < n; i++) {
     if (set.insert(i).second) {
       indices.push_back(i);
     }
   }
 
-  return DataFrameSubsetVisitors(df, keep).subset(indices, df.attr("class"));
+  return DataFrameSubsetVisitors(df, keep).subset(indices, get_class(df));
 }
 
 // [[Rcpp::export]]
 SEXP n_distinct_multi(List variables, bool na_rm = false) {
   if (variables.length() == 0) {
-    stop("need at least one column for n_distinct()");
+    stop("Need at least one column for `n_distinct()`");
   }
 
   MultipleVectorVisitors visitors(variables);

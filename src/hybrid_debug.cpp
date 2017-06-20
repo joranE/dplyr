@@ -1,3 +1,4 @@
+#include "pch.h"
 #include <dplyr/main.h>
 
 #include <dplyr/HybridHandlerMap.h>
@@ -12,7 +13,7 @@ using namespace dplyr;
 
 class VerifyHybrid : public Result {
 public:
-  VerifyHybrid(SEXP x_) : x(x_) {}
+  explicit VerifyHybrid(SEXP x_) : x(x_) {}
 
 public:
   SEXP process(const RowwiseDataFrame&) {
@@ -35,7 +36,7 @@ private:
   RObject x;
 };
 
-Result* verify_hybrid_prototype(SEXP call, const ILazySubsets& subsets, int nargs) {
+Result* verify_hybrid_prototype(SEXP call, const ILazySubsets&, int nargs) {
   // if not exactly one arg, let R handle it
   if (nargs != 1)
     return 0;
@@ -50,7 +51,7 @@ Result* verify_hybrid_prototype(SEXP call, const ILazySubsets& subsets, int narg
 
 class VerifyNotHybrid : public Result {
 public:
-  VerifyNotHybrid(SEXP x_) : x(x_) {}
+  explicit VerifyNotHybrid(SEXP x_) : x(x_) {}
 
 public:
   SEXP process(const RowwiseDataFrame&) {
@@ -73,7 +74,7 @@ private:
   RObject x;
 };
 
-Result* verify_not_hybrid_prototype(SEXP call, const ILazySubsets& subsets, int nargs) {
+Result* verify_not_hybrid_prototype(SEXP call, const ILazySubsets&, int nargs) {
   // if not exactly one arg, let R handle it
   if (nargs != 1)
     return 0;

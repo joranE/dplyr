@@ -4,10 +4,9 @@
 #include <tools/debug.h>
 #include <tools/hash.h>
 #include <tools/match.h>
-#include <tools/DotsOf.h>
 #include <tools/pointer_vector.h>
 #include <tools/collapse.h>
-#include <tools/LazyDots.h>
+#include <tools/Quosure.h>
 #include <tools/utils.h>
 
 #endif

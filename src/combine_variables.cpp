@@ -1,3 +1,4 @@
+#include "pch.h"
 #include <Rcpp.h>
 using namespace Rcpp;
 
@@ -37,7 +38,7 @@ class VarList {
   }
 
 public:
-  VarList(int n) : out_indx(), out_name() {
+  explicit VarList(int n) : out_indx(), out_name() {
     out_indx.reserve(n);
     out_name.reserve(n);
   }

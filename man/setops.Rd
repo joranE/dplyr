@@ -7,7 +7,7 @@
 \alias{union_all}
 \alias{setdiff}
 \alias{setequal}
-\title{Set operations.}
+\title{Set operations}
 \usage{
 intersect(x, y, ...)
 
@@ -42,4 +42,3 @@ setdiff(second, first)
 union_all(first, second)
 setequal(mtcars, mtcars[32:1, ])
 }
-

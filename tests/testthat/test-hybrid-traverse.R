@@ -111,7 +111,7 @@ test_hybrid <- function(grouping) {
   })
 
   test_that("assignments work (#1452)", {
-    expect_false(exists("xx"))
+    expect_false(env_has(nms = "xx"))
     expect_equal(
       test_df %>%
         grouping %>%
@@ -125,11 +125,11 @@ test_hybrid <- function(grouping) {
         grouping %>%
         select(-e)
     )
-    expect_false(exists("xx"))
+    expect_false(env_has(nms = "xx"))
   })
 
   test_that("assignments don't change variable (#315, #1452)", {
-    expect_false(exists("a"))
+    expect_false(env_has(nms = "a"))
     expect_equal(
       test_df %>%
         grouping %>%
@@ -143,19 +143,21 @@ test_hybrid <- function(grouping) {
         grouping %>%
         select(-e)
     )
-    expect_false(exists("a"))
+    expect_false(env_has(nms = "a"))
   })
 
   test_that("assignments don't carry over (#1452)", {
+    # error messages by bindr/rlang
     expect_error(
       test_df %>%
         grouping %>%
         mutate(f = { xx <- 5; xx }, g = xx),
-      "xx")
+      "xx"
+    )
   })
 
   test_that("assignments don't leak (#1452)", {
-    expect_false(exists("xx"))
+    expect_false(env_has(nms = "a"))
     test <-
       test_df %>%
       grouping %>%
@@ -163,7 +165,7 @@ test_hybrid <- function(grouping) {
         xx <- 5
         xx
       })
-    expect_false(exists("xx"))
+    expect_false(env_has(nms = "a"))
   })
 
   test_that("[ works (#912)", {
@@ -182,16 +184,12 @@ test_hybrid <- function(grouping) {
   })
 
   test_that("interpolation works (#1012)", {
-    uq <- lazyeval::uq # hadley/lazyeval#78
-
-    var <- ~ b
+    var <- quo(b)
 
     expect_equal(
       test_df %>%
         grouping %>%
-        mutate(., f = lazyeval::f_eval( ~ mean(uq(
-          var
-        )))) %>%
+        mutate(., f = mean(UQ(var))) %>%
         select(-e),
       test_df %>%
         grouping %>%
@@ -201,8 +199,7 @@ test_hybrid <- function(grouping) {
   })
 
   test_that("can compute 1 - ecdf(y)(y) (#2018)", {
-    surv <- function(x)
-      1 - ecdf(x)(x)
+    surv <- function(x) 1 - ecdf(x)(x)
 
     expect_equal(
       test_df %>%
@@ -276,30 +273,13 @@ test_hybrid <- function(grouping) {
     )
   })
 
-  test_that("filter understands .env in a pipe (#1469)", {
-    skip("Currently failing")
-
-    b <- 2L
-
-    expect_equal(
-      test_df %>%
-        grouping %>%
-        filter(b < .env$b) %>%
-        select(-e),
-      test_df %>%
-        grouping %>%
-        filter(b < 2) %>%
-        select(-e)
-    )
-  })
-
   test_that("filter understands get(..., .env) in a pipe (#1469)", {
     b <- 2L
 
     expect_equal(
       test_df %>%
         grouping %>%
-        filter(b < get("b", .env)) %>%
+        filter(b < get("b", envir = .env)) %>%
         select(-e),
       test_df %>%
         grouping %>%
@@ -360,23 +340,6 @@ test_hybrid <- function(grouping) {
         test_df %>%
           grouping,
         f = .env$b) %>%
-        select(-e),
-      test_df %>%
-        grouping %>%
-        mutate(f = 2L) %>%
-        select(-e)
-    )
-  })
-
-  test_that("mutate understands .env in a pipe (#1469)", {
-    skip("Currently failing")
-
-    b <- 2L
-
-    expect_equal(
-      test_df %>%
-        grouping %>%
-        mutate(f = .env$b) %>%
         select(-e),
       test_df %>%
         grouping %>%
@@ -448,21 +411,6 @@ test_hybrid <- function(grouping) {
     )
   })
 
-  test_that("summarise understands .env in a pipe (#1469)", {
-    skip("Currently failing")
-
-    b <- 2L
-
-    expect_equal(
-      test_df %>%
-        grouping %>%
-        summarise(f = .env$b),
-      test_df %>%
-        grouping %>%
-        summarise(f = 2L)
-    )
-  })
-
   test_that("summarise understands get(..., .env) in a pipe (#1469)", {
     b <- 2L
 
@@ -505,7 +453,7 @@ test_hybrid <- function(grouping) {
       conflict_data %>%
         rename(env = .env, data = .data) %>%
         grouping %>%
-        summarise_each(funs(mean), env, data)
+        summarise_at(vars(env, data), funs(mean))
     )
   })
 
@@ -513,4 +461,4 @@ test_hybrid <- function(grouping) {
 
 test_hybrid(identity)
 test_hybrid(rowwise)
-test_hybrid(. %>% group_by_( ~ id))
+test_hybrid(. %>% group_by(!! quo(id)))

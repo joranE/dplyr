@@ -1,133 +1,146 @@
+This is a resubmission that removes the "install dbplyr" message (sorry for missing that!)
+
+Continuing our existing email thread, there were 7seven packages with new failures:
+
+5         PKNCA  re-building of vignette outputs  OK WARNING
+Crash - don't know why. Not obviously dplyr related
+
+6          RSDA                         examples  OK   ERROR
+Seems to be DBI related, not dplyr/dbplyr.
+
+9      bikedata                         examples  OK   ERROR
+10     bikedata                            tests  OK   ERROR
+Needs to imports dbplyr - new package since last dplyr submission
+I'll add to my list.
+
+35         mglR             package dependencies  OK    NOTE
+Seems unrelated: Package suggested but not available for checking: ‘grasp2db’
+
+39      poplite                         examples  OK   ERROR
+40      poplite                            tests  OK   ERROR
+Needs imports dbplyr: not sure why wasn't on previous list. I'll add to
+list of package maintainers to contact.
+
+47     sparklyr whether package can be installed  OK   ERROR
+New release since last dplyr submission. I can work with authors
+to get fix out ASAP
+
+50      stplanr                         examples  OK   ERROR
+New release since last dplyr submission. Using now deprecated function
+
+---
+
+This is a resubmission following unexpectedly high numbers of failures in the revdep checks. Email correspondence summarised below.
+
+There were eight packages that broke because of rbind_all/rbind_list
+(aemo, PopED, bootnet, boxr, ggvis, lvnet, mlVAR, rwunderground). I
+clearly did not deprecate these functions correctly so I've addded back
+in. A spot check of ggvis and rwunderground shows no problems now.
+
+There were five problems that were somehow missed by our revdep checks:
+
+- assertr: one test failure because dplyr is less strict now. Author has been
+  notified of small change needed, and is preparing CRAN release.
+
+- parlitools: this was a bug in dplyr and has been fixed.
+
+- spdplyr: fix on CRAN now.
+
+- tatoo: fix on CRAN now.
+
+- valr: problem fixed in development version.
+
+Five packages now need to import dbplyr (macleish, mdsr, parsemsf,
+replyr, taxizedb). I'll contact the maintainers once dplyr & dplyr
+are on CRAN.
+
+There were other revdep check failures, but they are deliberate API changes (or bug fixes) and all maintainers have been notified with (now) at least two weeks to fix the problem.
+
+---
+
 ## Test environments
 
-* local OS X install, R 3.3.1
-* ubuntu 12.04 (on travis-ci), R 3.3.1, R 3.2.5, R-devel.
+* local OS X install, R 3.4.0
+* ubuntu 12.04 (on travis-ci), R 3.4.0, R 3.2.5, R-devel.
 * win-builder (devel)
 
 ## R CMD check results
 
-0 ERRORs | 1 WARNING | 4 NOTEs
+0 ERRORs | 1 WARNINGs | 1 NOTEs
 
-* checking installed package size ... NOTE. 
+* checking Rd cross-references ... WARNING
+  Unknown package 'dbplyr' in Rd xrefs
 
-  This is all compiled code in the libs/ directory.
+* Suggests or Enhances not in mainstream repositories:  dbplyr
 
-* checking CRAN incoming feasibility ... NOTE
-  This package is MIT licensed.
+  dplyr suggests dbplyr which is not yet on CRAN. Unless you'd prefer 
+  otherwise, I will submit once dplyr is on CRAN.
 
-* checking package dependencies ... NOTE
-  Package suggested but not available for checking: 'dtplyr'
+## Reverse dependencies
 
-  Suggests or Enhances not in mainstream repositories: dtplyr 
-  checking Rd cross-references ... WARNING
-   
-  I'll submit this once dplyr has been accepted (unless you'd prefer a 
-  parallel submission)
+We ran R CMD check on all 588 reverse dependencies. We see 80 problems. The majority of maintainers have been informed of problems twice, on April 18 and May 4. Unfortunately there were a few packages added to CRAN between May 4 and today. We informed those maintainers on May 17, including suggested fixes so they could be remedied as quickly as possible.
 
-* checking dependencies in R code ... NOTE
-  Missing or unexported object: 'RSQLite::rsqliteVersion' 
-  
-  This is used for compatiblity with both current and next version of 
-  RSQLite.
+Summary of problems below. We have reviewed all problems and taken remedial action where possible.
 
-## Downstream dependencies
+* tatoo: ?
 
-I ran `R CMD check` on all 297 reverse dependencies (https://github.com/hadley/dplyr/tree/master/revdep/). There are unfortunately a number of new failures described below. There were two sets of failures caused by deliberate changes to the API:
+* bayesplot: During vignette building, not reproducible but likely unrelated to dplyr changes
 
-* select() previously used NSE and "virtual" functions; now it uses real functions:
-  
-  * alakazam: checking re-building of vignette outputs ... WARNING
-  * assertr: checking examples ... ERROR
-  * condformat: checking examples ... ERROR
-  * ddpcr: checking examples ... ERROR
-  * easyformatr: checking examples ... ERROR
-  * mtconnectR: checking examples ... ERROR
-  * statar: checking examples ... ERROR
+* openair, vdmR: segfaults for unknown reasons
 
-* $.tbl_df is now stricter, throwing an error if the column does not exist. 
-  This causes some code that previously failed silently to now throw an error:
-  
-  * broom: checking examples ... ERROR
-  * ggmcmc: checking examples ... ERROR
-  * gutenbergr: checking examples ... ERROR
-  * rplexos: checking examples ... ERROR
+* assertr: Related to changes in nonstandard evaluation
 
-bigrquery fails - I have a 0.5 compatible version ready for submission once dplyr is through (unfortunately it was too difficult to make a package that worked with both dplyr 0.4 and 0.5.)
+* broom: Access of deprecated function `lahman_df()`
 
-There were also a bunch of errors that don't seem related to dplyr (as far as I can tell)
+* carpenter, geoSpectral, valr: fail with "Variable context not set" due
+  to a deliberate API change.
 
-* chunked: checking tests ... ERROR
+* chunked: Access of function `sql_render()` now in the dbplyr package
 
-* datastepr: checking re-building of vignette outputs ... WARNING
+* ddcpr: Error building vignette
 
-* DeLorean: checking re-building of vignette outputs ... WARNING
-  This looks like some C++ compilation problem
+* DeLorean, incadata, rmcfs: `filter()` is now an S3 method, the package 
+  defines functions named `filter.xxx()`
 
-* describer: checking tests ... ERROR
-  Looks like automatic code linting error
+* emil, lplyr: `select()` is now an S3 method, the package implicitly calls 
+  `select.list()`
 
-* dotwhisker: checking examples ... ERROR
+* etl, infuser, MonetDBLite, RPresto, sqlscore: Bad documentation link to/usage 
+  of function `src_sql()` or `src_desc()` or `build_sql()` now in dbplyr. 
+  These maintainers are waiting for dbplyr release which will be submitted
+  once dplyr is accepted.
 
-* edeaR: checking re-building of vignette outputs ... WARNING
-  Stricter coercion check when rbinding
+* eyetrackingR: Tests running too long
 
-* elpatron: checking examples ... ERROR
+* ggfortify: fails stricter behaviour of `dplyr::lag()` which now errors 
+  if it looks like you wanted `stats::lag()`.
 
-* ggspectra: checking examples ... ERROR
+* highcharter: Invalid use of dplyr API
 
-* ggvis: checking tests ... ERROR
-  Failing on CRAN (we're still working on a fix)
+* metaplot: ?
 
-* haven: checking examples ... ERROR
-  Failing on CRAN (have fix in progress)
+* parlitools: Vignette building error, ?
 
-* modellingTools: checking examples ... ERROR
-  Now throw error if you try and create a tibble with multiple columns
-  that have the same name.
+* Momocs: `transmute()` is now an S3 generic, 
+  https://github.com/vbonhomme/Momocs/issues/178
 
-* photobiology: checking examples ... ERROR
+* myTAI: ?
 
-* photobiologyInOut: checking re-building of vignette outputs ... WARNING
+* RNeXML: ?
 
-* RCMIP5: checking tests ... ERROR
-  Numerical failure in tests, seems unrelated to dplyr.
+* sf: seems to be buglet in our check script as not finding dplyr 0.6.0.
 
-* resumer: checking tests ... ERROR
+* sjstats: ?
 
-* RNeXML: checking examples ... ERROR
+* taxizedb, spdplyr: Too strict checking wording of dplyr error message or
+  internals
 
-* SpaDES: checking re-building of vignette outputs ... WARNING
-  ???
-  
-* sprintfr: checking examples ... ERROR
-  Fails to import data_frame function
+* tcR: `slice()` is now an S3 method.
 
-* tidytext: checking examples ... ERROR
+* texmexseq: ?
 
-* treeplyr: checking examples ... WARNING
-  Uses deprecated function from tibble package
+* tidyjson: ?, orphaned
 
-* useful: checking tests ... ERROR
+* treeplyr: unsupported usage of `mutate()`
 
-* vcfR: checking examples ... ERROR
-
-Finally, there were a few failures because of install problems:
-
-* Failed to install dependencies for: biomartr, HydeNet, IATscores, myTAI, pRF
-
-* Failed to install: aemo, bigrquery, imager, morse, RSQLServer, texmexseq
-
-* GenCAT: checking examples ... ERROR
-  Doesn't correctly check for non-installed suggested package
-
-* glycanr: checking examples ... ERROR
-  Doesn't correctly check for non-installed suggested package
-
-* poplite: checking re-building of vignette outputs ... WARNING
-  Doesn't correctly check for non-installed suggested package
-
-* tigger: checking examples ... ERROR
-  Doesn't correctly check for non-installed suggested package
-
-
-Authors were notified on June 9, June 14, and again today.
+* VWPre: Vignette building error, ?
